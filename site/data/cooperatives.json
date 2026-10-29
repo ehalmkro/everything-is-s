@@ -1,0 +1,234 @@
+{
+  "_source": "Cooperative list: https://s-etukortti.fi/en/support/s-groups-cooperatives (checked 2026-10-29). City mapping from each cooperative's stated region; Porvoo per vbo.fi election districts, Vaasa per KPO's Prisma Vaasa.",
+  "cooperatives": {
+    "hok-elanto": {
+      "name": "HOK-Elanto",
+      "site": "https://hok-elanto.fi/",
+      "cities": [
+        "Helsinki",
+        "Espoo",
+        "Vantaa"
+      ],
+      "council": {
+        "term": "2024-2028",
+        "size": 60,
+        "format": "html",
+        "members_url": "https://hok-elanto.fi/tietoa-meista/hallinto-ja-johto",
+        "notes": "name; groups get public support (Edustajistoryhmien tuet 2021-2025 PDF) but aren't named on the page"
+      }
+    },
+    "pirkanmaa": {
+      "name": "Pirkanmaan Osuuskauppa",
+      "site": "https://pirkanmaanosuuskauppa.fi/",
+      "cities": [
+        "Tampere"
+      ],
+      "council": {
+        "term": "2024-2028",
+        "size": 60,
+        "format": "html",
+        "members_url": "https://pirkanmaanosuuskauppa.fi/tietoa-meista/hallinto-ja-johto",
+        "notes": "name, occupation, municipality, jäsenalue"
+      }
+    },
+    "arina": {
+      "name": "Osuuskauppa Arina",
+      "site": "https://arina.fi/",
+      "cities": [
+        "Oulu",
+        "Rovaniemi"
+      ],
+      "council": {
+        "term": "2026-2030",
+        "size": 65,
+        "format": "html",
+        "members_url": "https://arina.fi/tietoa-meista/hallinto-ja-johto",
+        "notes": "name, occupation, municipality, jäsenalue; results PDF view.sok-julkaisut.fi/arina/osuuskauppavaalit-tulos-2026"
+      }
+    },
+    "tok": {
+      "name": "Turun Osuuskauppa",
+      "site": "https://tok.fi/",
+      "cities": [
+        "Turku"
+      ],
+      "council": {
+        "term": "2024-2028",
+        "size": 60,
+        "format": "html",
+        "members_url": "https://tok.fi/tietoa-meista/hallinto-ja-johto",
+        "notes": "name, municipality (run-on paragraph); next election spring 2028"
+      }
+    },
+    "sso": {
+      "name": "Suur-Seudun Osuuskauppa SSO",
+      "site": "https://sso.fi/",
+      "cities": [
+        "Salo"
+      ],
+      "council": {
+        "term": "2024-2028",
+        "size": 50,
+        "format": "pdf",
+        "members_url": "https://cdn.s-cloud.fi/v1/assets/dam-id/7wwQeRU_45w8AG5PhyP8K1.pdf",
+        "notes": "name, municipality; also on sso.fi/tietoa-meista/hallinto-ja-johto"
+      }
+    },
+    "keskimaa": {
+      "name": "Osuuskauppa Keskimaa",
+      "site": "https://keskimaa.fi/",
+      "cities": [
+        "Jyväskylä"
+      ],
+      "council": {
+        "term": "2025-2029",
+        "size": null,
+        "format": "pdf",
+        "members_url": "https://cdn.s-cloud.fi/v1/assets/dam-id/0BaPVOgWqI89KDSrCuRjaq.pdf",
+        "notes": "results PDF https://cdn.s-cloud.fi/v1/assets/dam-id/DTM9d9nAKvb8Iep9jyYRdM.pdf; election Oct 2025"
+      }
+    },
+    "peeassa": {
+      "name": "Osuuskauppa PeeÄssä",
+      "site": "https://peeassa.fi/",
+      "cities": [
+        "Kuopio"
+      ],
+      "council": {
+        "term": "2024-2028",
+        "size": null,
+        "format": "html",
+        "members_url": "https://peeassa.fi/tietoa-meista/osuuskauppavaalit",
+        "notes": "name, occupation, municipality, votes, jäsenalue"
+      }
+    },
+    "hameenmaa": {
+      "name": "Osuuskauppa Hämeenmaa",
+      "site": "https://hameenmaa.fi/",
+      "cities": [
+        "Lahti",
+        "Hämeenlinna"
+      ],
+      "council": {
+        "term": "2025-2028",
+        "size": 45,
+        "format": "pdf",
+        "members_url": "https://cdn.s-cloud.fi/v1/assets/dam-id/Dth4V-jtaBN9eKH0nvDoaW.pdf",
+        "notes": ""
+      }
+    },
+    "satakunta": {
+      "name": "Satakunnan Osuuskauppa",
+      "site": "https://satakunnanosuuskauppa.fi/",
+      "cities": [
+        "Pori"
+      ],
+      "council": {
+        "term": "2025-2029",
+        "size": 50,
+        "format": "html",
+        "members_url": "https://satakunnanosuuskauppa.fi/tietoa-meista/hallinto-ja-johto",
+        "notes": "name, jäsenalue (municipality only per area)"
+      }
+    },
+    "pko": {
+      "name": "Pohjois-Karjalan Osuuskauppa",
+      "site": "https://pko.fi/",
+      "cities": [
+        "Joensuu"
+      ],
+      "council": {
+        "term": "2024-2028",
+        "size": 50,
+        "format": "html",
+        "members_url": "https://pko.fi/tietoa-meista/edustajisto",
+        "notes": "name, jäsenalue; results doc https://cdn.s-cloud.fi/v1/assets/dam-id/262MTC2pKJZAm_nDSBF3k2"
+      }
+    },
+    "kso": {
+      "name": "Kymen Seudun Osuuskauppa KSO",
+      "site": "https://kymenseudunosuuskauppa.fi/",
+      "cities": [
+        "Kouvola"
+      ],
+      "council": {
+        "term": "2025-2029",
+        "size": 50,
+        "format": "html",
+        "members_url": "https://kymenseudunosuuskauppa.fi/tietoa-meista/kson-edustajisto",
+        "notes": "name, municipality, jäsenalue"
+      }
+    },
+    "eekoo": {
+      "name": "Etelä-Karjalan Osuuskauppa",
+      "site": "https://eekoo.fi/",
+      "cities": [
+        "Lappeenranta"
+      ],
+      "council": {
+        "term": "2026-2030",
+        "size": null,
+        "format": "pdf",
+        "members_url": "https://cdn.s-cloud.fi/v1/assets/dam-id/BF8TIbRE4Qj9M2226_budo.pdf",
+        "notes": "all-candidate votes PDF https://cdn.s-cloud.fi/v1/assets/dam-id/3D_odVtKKjn9Ey0oGWiBjr.pdf"
+      }
+    },
+    "kpo": {
+      "name": "Osuuskauppa KPO",
+      "site": "https://osuuskauppakpo.fi/",
+      "cities": [
+        "Vaasa"
+      ],
+      "council": {
+        "term": "term not stated",
+        "size": 68,
+        "format": "html",
+        "members_url": "https://osuuskauppakpo.fi/tietoa-meista/hallinto/edustajisto",
+        "notes": "name, municipality, jäsenalue A/B/C"
+      }
+    },
+    "eepee": {
+      "name": "Etelä-Pohjanmaan Osuuskauppa",
+      "site": "https://eepee.fi/",
+      "cities": [
+        "Seinäjoki"
+      ],
+      "council": {
+        "term": "2025-2028",
+        "size": 50,
+        "format": "html",
+        "members_url": "https://eepee.fi/tietoa-meista/edustajisto",
+        "notes": "name, occupation, municipality, jäsenalue (2 names duplicated with swapped order)"
+      }
+    },
+    "suur-savo": {
+      "name": "Osuuskauppa Suur-Savo",
+      "site": "https://suursavo.fi/",
+      "cities": [
+        "Mikkeli"
+      ],
+      "council": {
+        "term": "2024-2028",
+        "size": 48,
+        "format": "html",
+        "members_url": "https://suursavo.fi/tietoa-meista/osuuskauppavaalit/aanestystulokset",
+        "notes": "name, votes, municipality, jäsenalue"
+      }
+    },
+    "vbo": {
+      "name": "Varuboden-Osla",
+      "site": "https://vbo.fi/",
+      "cities": [
+        "Porvoo"
+      ],
+      "council": {
+        "term": "2024-2028",
+        "size": 50,
+        "format": "html",
+        "members_url": "https://vbo.fi/tietoa-meista/hallinto-ja-johto/edustajisto",
+        "notes": "name, municipality, jäsenalue"
+      }
+    }
+  },
+  "_note": "No cooperative publishes party/electoral-alliance per member; party comes from matching against 2025 municipal election candidates."
+}

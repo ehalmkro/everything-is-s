@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="fi">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2300843d'/%3E%3Ctext x='16' y='23' font-family='system-ui,sans-serif' font-size='20' font-weight='700' fill='white' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E">
+	<title>Kuka päättää osuuskaupoissa?</title>
+	<style>
+		:root {
+			color-scheme: light;
+			--page: #f9f9f7;
+			--surface: #fcfcfb;
+			--ink: #0b0b0b;
+			--ink-2: #52514e;
+			--muted: #898781;
+			--grid: #e1e0d9;
+			--border: rgba(11, 11, 11, 0.10);
+			--accent: #00843d;
+			/* Ordinal ramp: how far into municipal politics a member is (validated, light surface). */
+			--lvl-elected: #0d5a2c;
+			--lvl-deputy: #2a8c4f;
+			--lvl-ran: #63b37e;
+			--lvl-none: #d6d5ce;
+			--on-dark: #ffffff;
+			--heat-lo: #e3f3e8;
+			--heat-hi: #0d5a2c;
+		}
+		@media (prefers-color-scheme: dark) {
+			:root:where(:not([data-theme="light"])) {
+				color-scheme: dark;
+				--page: #0d0d0d;
+				--surface: #1a1a19;
+				--ink: #f0efec;
+				--ink-2: #c3c2b7;
+				--muted: #898781;
+				--grid: #2c2c2a;
+				--border: rgba(255, 255, 255, 0.10);
+				--accent: #3fbf6f;
+				--lvl-elected: #6fcf8f;
+				--lvl-deputy: #2f9a56;
+				--lvl-ran: #1f6e3d;
+				--lvl-none: #3a3a37;
+				--on-dark: #0b0b0b;
+				--heat-lo: #1d2b21;
+				--heat-hi: #6fcf8f;
+			}
+		}
+		:root[data-theme="dark"] {
+			color-scheme: dark;
+			--page: #0d0d0d;
+			--surface: #1a1a19;
+			--ink: #f0efec;
+			--ink-2: #c3c2b7;
+			--muted: #898781;
+			--grid: #2c2c2a;
+			--border: rgba(255, 255, 255, 0.10);
+			--accent: #3fbf6f;
+			--lvl-elected: #6fcf8f;
+			--lvl-deputy: #2f9a56;
+			--lvl-ran: #1f6e3d;
+			--lvl-none: #3a3a37;
+			--on-dark: #0b0b0b;
+			--heat-lo: #1d2b21;
+			--heat-hi: #6fcf8f;
+		}
+
+		* { box-sizing: border-box; }
+		body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+		main { max-width: 1080px; margin: 0 auto; padding: 32px 16px 64px; }
+		a { color: var(--accent); }
+		h1 { font-size: 30px; line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.01em; }
+		h1 span { color: var(--accent); }
+		h2 { font-size: 19px; margin: 0 0 4px; }
+		.lede { color: var(--ink-2); max-width: 680px; margin: 0; }
+		.sub { color: var(--ink-2); margin: 0 0 16px; font-size: 14px; }
+		.top { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 24px; }
+		.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 20px; }
+
+		.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+		.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+		.kpi .value { font-size: 34px; font-weight: 650; line-height: 1.1; }
+		.kpi .label { color: var(--ink-2); font-size: 13px; margin-top: 4px; }
+
+		.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 14px; font-size: 13px; color: var(--ink-2); }
+		.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+		/* Stacked bars: one row per cooperative */
+		.rows { display: grid; gap: 10px; }
+		.row { display: grid; grid-template-columns: minmax(130px, 210px) 1fr 52px; gap: 12px; align-items: center; }
+		.row .who { font-size: 14px; line-height: 1.25; }
+		.row .who small { display: block; color: var(--muted); font-size: 12px; }
+		.row .pct { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+		.bar { display: flex; gap: 2px; height: 22px; }
+		.seg { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--on-dark); min-width: 2px; cursor: default; }
+		.seg:first-child { border-radius: 4px 0 0 4px; }
+		.seg:last-child { border-radius: 0 4px 4px 0; }
+		.seg:only-child { border-radius: 4px; }
+		.seg.light-label { color: var(--ink); }
+		.seg:hover { filter: brightness(1.12); }
+
+		/* Party totals */
+		.hbars { display: grid; gap: 6px; }
+		.hbar { display: grid; grid-template-columns: 150px 1fr; gap: 12px; align-items: center; font-size: 14px; }
+		.hbar .track { display: flex; align-items: center; gap: 8px; }
+		.hbar .fill { height: 16px; background: var(--lvl-elected); border-radius: 0 4px 4px 0; min-width: 2px; }
+		.hbar .n { font-variant-numeric: tabular-nums; color: var(--ink-2); font-size: 13px; }
+
+		/* Heatmap */
+		.scroll { overflow-x: auto; }
+		table.heat { border-collapse: separate; border-spacing: 2px; font-size: 13px; min-width: 640px; }
+		table.heat th { font-weight: 600; color: var(--ink-2); padding: 4px 6px; text-align: center; white-space: nowrap; }
+		table.heat th.coop { text-align: left; color: var(--ink); font-weight: 500; }
+		table.heat td { width: 52px; height: 30px; text-align: center; border-radius: 4px; font-variant-numeric: tabular-nums; font-weight: 600; }
+		table.heat td.zero { color: var(--muted); font-weight: 400; background: transparent; }
+
+		/* Member table */
+		.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+		.filters input, .filters select { font: inherit; font-size: 14px; padding: 7px 10px; border: 1px solid var(--grid); border-radius: 8px; background: var(--surface); color: var(--ink); }
+		.filters input { flex: 1 1 220px; }
+		table.members { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 760px; }
+		table.members th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; padding: 8px 8px; border-bottom: 1px solid var(--grid); position: sticky; top: 0; background: var(--surface); }
+		table.members td { padding: 7px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+		table.members td.num { text-align: right; font-variant-numeric: tabular-nums; }
+		.table-wrap { max-height: 560px; overflow: auto; }
+		.status { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+		.status i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+		.conf { font-size: 12px; color: var(--ink-2); border: 1px solid var(--grid); border-radius: 999px; padding: 1px 8px; white-space: nowrap; cursor: help; }
+		.count { color: var(--muted); font-size: 13px; margin-top: 8px; }
+		h2 small.local { font-size: 13px; font-weight: 400; color: var(--muted); }
+
+		.notes { color: var(--ink-2); font-size: 14px; }
+		.notes li { margin-bottom: 6px; }
+
+		#tip { position: fixed; pointer-events: none; z-index: 10; background: var(--surface); color: var(--ink); border: 1px solid var(--border); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); border-radius: 8px; padding: 8px 10px; font-size: 13px; max-width: 260px; display: none; }
+		#tip strong { display: block; }
+
+		@media (max-width: 640px) {
+			h1 { font-size: 24px; }
+			.row { grid-template-columns: 1fr 46px; }
+			.row .who { grid-column: 1 / -1; }
+			.hbar { grid-template-columns: 110px 1fr; }
+		}
+	</style>
+</head>
+<body>
+<main>
+	<div class="top">
+		<div>
+			<h1>Kuka päättää <span>osuuskaupoissa</span>?</h1>
+			<p class="lede">S-ryhmän alueosuuskauppojen ylintä päätösvaltaa käyttää asiakasomistajien valitsema edustajisto. Moni edustajiston jäsen istuu myös kunnanvaltuustossa, joka päättää muun muassa kaavoituksesta. Mukana ovat ne 16 osuuskauppaa, joiden alueella Suomen 20 suurinta kaupunkia sijaitsevat.</p>
+		</div>
+		<a href="index.html">← Takaisin karttaan</a>
+	</div>
+
+	<section class="kpis" id="kpis"></section>
+
+	<section class="card">
+		<h2>Kuinka moni edustajiston jäsen on mukana kuntapolitiikassa?</h2>
+		<p class="sub">Kunkin osuuskaupan edustajisto jaoteltuna sen mukaan, miten jäsenet menestyivät vuoden 2025 kuntavaaleissa. Järjestys valtuustoon valittujen osuuden mukaan.</p>
+		<div class="legend" id="levels-legend"></div>
+		<div class="rows" id="rows"></div>
+	</section>
+
+	<section class="card">
+		<h2>Mitkä puolueet?</h2>
+		<p class="sub">Valtuutettuina tai varavaltuutettuina toimivat edustajiston jäsenet puolueittain. Osuuskaupat eivät julkaise jäsentensä puoluekantaa, joten tieto on peräisin kuntavaalien ehdokastiedoista.</p>
+		<div class="hbars" id="parties"></div>
+	</section>
+
+	<section class="card">
+		<h2>Puolueet osuuskaupoittain</h2>
+		<p class="sub">Valtuutetut ja varavaltuutetut kunkin osuuskaupan edustajistossa.</p>
+		<div class="scroll"><table class="heat" id="heat"></table></div>
+	</section>
+
+	<section class="card" id="members-card">
+		<h2>Kaikki edustajiston jäsenet <small class="local">(vain paikallisesti)</small></h2>
+		<p class="sub">Jäsenet on yhdistetty vuoden 2025 kuntavaalien ehdokkaisiin nimen ja kunnan perusteella. Osumatarkkuuden perusteet näkyvät, kun viet hiiren merkinnän päälle.</p>
+		<div class="filters">
+			<input id="search" type="search" placeholder="Hae nimellä, kunnalla tai ammatilla…" aria-label="Hae jäseniä">
+			<select id="coop-filter" aria-label="Osuuskauppa"><option value="">Kaikki osuuskaupat</option></select>
+			<select id="status-filter" aria-label="Rooli kunnassa">
+				<option value="">Kaikki roolit kunnassa</option>
+				<option value="elected">Valtuutetut</option>
+				<option value="councillor">Valtuutetut ja varavaltuutetut</option>
+				<option value="ran">Ehdolla 2025</option>
+				<option value="none">Ei ehdolla</option>
+			</select>
+			<select id="party-filter" aria-label="Puolue"><option value="">Kaikki puolueet</option></select>
+		</div>
+		<div class="table-wrap">
+			<table class="members">
+				<thead><tr><th>Nimi</th><th>Osuuskauppa</th><th>Kunta</th><th>Ammatti</th><th>Puolue</th><th>Kuntavaalit 2025</th><th>Äänet</th><th>Osuma</th></tr></thead>
+				<tbody id="members"></tbody>
+			</table>
+		</div>
+		<div class="count" id="count"></div>
+	</section>
+
+	<section class="card notes">
+		<h2>Miten tämä on tehty ja mitä se ei kerro</h2>
+		<ul>
+			<li>Jäsenluettelot on koottu osuuskauppojen omilta verkkosivuilta (HTML- tai PDF-muodossa) lokakuussa 2026. Edustajistot on valittu eri vuosina (2024–2026), joten toimikaudet vaihtelevat. Toimikausi näkyy kunkin osuuskaupan nimen alla.</li>
+			<li>Kuntatiedot ovat oikeusministeriön avointa dataa vuoden 2025 kuntavaalien ehdokkaista.</li>
+			<li>Jäsen yhdistetään ehdokkaaseen, kun samalla suku- ja etunimellä oli ehdokas jäsenen kotikunnassa. <strong>Vahva</strong>: ammatit täsmäävät tai sukunimi on harvinainen. <strong>Kohtalainen</strong>: vain yksi ehdokas sopii, mutta mikään muu ei vahvista osumaa. <strong>Heikko</strong>: useampi ehdokas sopii, tai osuuskauppa julkaisee jäsenestä vain jäsenalueen.</li>
+			<li>Jos henkilö ei ollut ehdolla vuoden 2025 kuntavaaleissa, hän näkyy ryhmässä ”Ei ehdolla”, vaikka olisi poliitikko. Näin on esimerkiksi kansanedustajilla, jotka eivät asettuneet ehdolle kuntavaaleissa. Kaupunginhallitukset ja lautakunnat eivät ole vielä mukana.</li>
+			<li>Päällekkäinen jäsenyys ei ole väärinkäytös. Edustajiston vaaleissa voi asettua ehdolle kuka tahansa asiakasomistaja, ja poliittiset ryhmät asettavat ehdokkaita avoimesti.</li>
+			<li>Sivulla julkaistaan vain koostetut luvut. Yksittäisiä edustajiston jäseniä ei nimetä.</li>
+			<li>Virheilmoitukset: jos huomaat tiedoissa virheen, <a href="https://github.com/ehalmkro/kaikki-on-s/issues">avaa issue GitHubissa</a>.</li>
+		</ul>
+	</section>
+</main>
+<div id="tip" role="tooltip"></div>
+
+<script>
+	const PARTY_NAMES = {
+		KESK: "Keskusta", SDP: "SDP", KOK: "Kokoomus", PS: "Perussuomalaiset",
+		VIHR: "Vihreät", VAS: "Vasemmistoliitto", RKP: "RKP", KD: "Kristillisdemokraatit",
+		LIIK: "Liike Nyt", Other: "Muut ja paikalliset listat",
+	};
+	const MAIN_PARTIES = ["KESK", "SDP", "KOK", "PS", "VIHR", "VAS", "RKP", "KD"];
+	const LEVELS = [
+		{ key: "elected", label: "Valtuutettu", color: "var(--lvl-elected)" },
+		{ key: "deputy", label: "Varavaltuutettu", color: "var(--lvl-deputy)" },
+		{ key: "not_elected", label: "Ehdolla, ei valittu", color: "var(--lvl-ran)", lightLabel: true },
+		{ key: "none", label: "Ei ehdolla 2025", color: "var(--lvl-none)", lightLabel: true },
+	];
+	const RESULT_LABEL = { elected: "Valittu", deputy: "Varavaltuutettu", not_elected: "Ei valittu", ineligible: "Ei vaalikelpoinen" };
+	const CONFIDENCE_LABEL = { high: "vahva", medium: "kohtalainen", low: "heikko" };
+	// match_councils.py writes its evidence in English; translate the known phrases.
+	const EVIDENCE = [
+		[/^picked by occupation among (\d+) candidates with this name$/, "valittu ammatin perusteella $1 samannimisen ehdokkaan joukosta"],
+		[/^(\d+) candidates with this name$/, "$1 samannimistä ehdokasta"],
+		[/^only the member area is published, not the municipality$/, "osuuskauppa julkaisee vain jäsenalueen, ei kuntaa"],
+		[/^occupations overlap$/, "ammatit täsmäävät"],
+		[/^rare surname \((\d+) candidates nationwide\)$/, (_, n) => `harvinainen sukunimi (${count(+n, "ehdokas", "ehdokasta")} koko maassa)`],
+	];
+	const evidenceFi = e => EVIDENCE.reduce((text, [re, fi]) => text.replace(re, fi), e);
+	const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;  // Finnish: "1 ehdokas", "2 ehdokasta"
+	const pct = (n, total) => `${Math.round(n / total * 100)}\u00a0%`;
+	const TERM_LABEL = { "term not stated": "toimikautta ei ilmoitettu" };
+
+	const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+	const partyName = p => PARTY_NAMES[p] || p;
+	const level = m => m.match ? m.match.result === "ineligible" ? "not_elected" : m.match.result : "none";
+	const isCouncillor = m => ["elected", "deputy"].includes(level(m));
+
+	// Shared hover tooltip
+	const tip = document.getElementById("tip");
+	function attachTip(el, html) {
+		el.addEventListener("mousemove", e => {
+			tip.innerHTML = html;
+			tip.style.display = "block";
+			const x = Math.min(e.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
+			const y = Math.min(e.clientY + 14, window.innerHeight - tip.offsetHeight - 8);
+			tip.style.left = `${x}px`;
+			tip.style.top = `${y}px`;
+		});
+		el.addEventListener("mouseleave", () => tip.style.display = "none");
+	}
+
+	// Charts use only aggregate counts (data/council_summary.json, published). The member table
+	// needs the full lists with names, which exist only locally and are never published.
+	Promise.all([
+		fetch("data/council_summary.json").then(r => r.json()),
+		fetch("data/cooperatives.json").then(r => r.json()),
+		// The member lists exist only on the developer's machine; don't probe for them on the public site.
+		["localhost", "127.0.0.1"].includes(location.hostname)
+			? fetch("data/council_matches.json").then(r => r.ok ? r.json() : null).catch(() => null)
+			: null,
+	]).then(([summary, coopInfo, councils]) => {
+		renderCharts(summary, coopInfo.cooperatives);
+		if (councils) renderMembers(councils);
+		else document.getElementById("members-card").remove();
+	});
+
+	function renderCharts(summary, coopInfo) {
+		const coops = Object.entries(summary.cooperatives).map(([key, c]) => ({ key, ...c, cities: coopInfo[key].cities }));
+		const sum = f => coops.reduce((total, c) => total + f(c), 0);
+
+		// KPIs
+		const total = sum(c => c.members);
+		const elected = sum(c => c.levels.elected);
+		document.getElementById("kpis").innerHTML = [
+			[total, `edustajiston jäsentä ${coops.length} osuuskaupassa`],
+			[elected, `on kunnanvaltuutettuja (${pct(elected, total)})`],
+			[sum(c => c.levels.deputy), "lisäksi on varavaltuutettuja"],
+			[sum(c => c.sitting_councillors), "oli valtuutettuja jo ennen vuoden 2025 vaaleja"],
+		].map(([v, l]) => `<div class="kpi"><div class="value">${v}</div><div class="label">${l}</div></div>`).join("");
+
+		// Stacked bars per cooperative
+		document.getElementById("levels-legend").innerHTML = LEVELS
+			.map(l => `<span><i style="background:${l.color}"></i>${l.label}</span>`).join("");
+		const rows = document.getElementById("rows");
+		for (const c of [...coops].sort((a, b) => b.levels.elected / b.members - a.levels.elected / a.members)) {
+			const row = document.createElement("div");
+			row.className = "row";
+			row.innerHTML = `<div class="who">${esc(c.name)}<small>${esc(c.cities.join(", "))} · ${esc(TERM_LABEL[c.term] || c.term.replace("-", "–"))}</small></div><div class="bar"></div>
+				<div class="pct" title="Kunnanvaltuustoon valittujen osuus">${pct(c.levels.elected, c.members)}</div>`;
+			const bar = row.querySelector(".bar");
+			for (const l of LEVELS) {
+				const n = c.levels[l.key];
+				if (!n) continue;
+				const seg = document.createElement("div");
+				seg.className = "seg" + (l.lightLabel ? " light-label" : "");
+				seg.style.flex = `${n} 1 0`;
+				seg.style.background = l.color;
+				seg.textContent = n / c.members > 0.07 ? n : "";
+				attachTip(seg, `<strong>${esc(c.name)}</strong>${l.label}: ${n}/${c.members} (${pct(n, c.members)})`);
+				bar.append(seg);
+			}
+			rows.append(row);
+		}
+
+		// Party totals (councillors + deputies); minor parties fold into "Other"
+		const fold = p => MAIN_PARTIES.includes(p) ? p : "Other";
+		const partyCounts = {};
+		const cell = {};
+		for (const c of coops) {
+			for (const [party, n] of Object.entries(c.parties)) {
+				partyCounts[fold(party)] = (partyCounts[fold(party)] || 0) + n;
+				cell[`${c.key}|${fold(party)}`] = (cell[`${c.key}|${fold(party)}`] || 0) + n;
+			}
+		}
+		const parties = Object.entries(partyCounts).sort((a, b) => (a[0] === "Other") - (b[0] === "Other") || b[1] - a[1]);
+		const maxParty = Math.max(...parties.map(p => p[1]));
+		const partiesEl = document.getElementById("parties");
+		for (const [p, n] of parties) {
+			const el = document.createElement("div");
+			el.className = "hbar";
+			el.innerHTML = `<span>${esc(partyName(p))}</span>
+				<span class="track"><span class="fill" style="width:${n / maxParty * 85}%"></span><span class="n">${n}</span></span>`;
+			attachTip(el, `<strong>${esc(partyName(p))}</strong>${count(n, "edustajiston jäsen on valtuutettu tai varavaltuutettu", "edustajiston jäsentä on valtuutettuja tai varavaltuutettuja")}`);
+			partiesEl.append(el);
+		}
+
+		// Heatmap: cooperative × party
+		const cols = parties.map(p => p[0]);
+		const maxCell = Math.max(...Object.values(cell));
+		const heat = document.getElementById("heat");
+		heat.innerHTML = `<thead><tr><th></th>${cols.map(p => `<th title="${esc(partyName(p))}">${esc(p === "Other" ? "Muut" : p)}</th>`).join("")}</tr></thead>`;
+		const tbody = document.createElement("tbody");
+		for (const c of [...coops].sort((a, b) => a.name.localeCompare(b.name, "fi"))) {
+			const tr = document.createElement("tr");
+			tr.innerHTML = `<th class="coop">${esc(c.name)}</th>`;
+			for (const p of cols) {
+				const n = cell[`${c.key}|${p}`] || 0;
+				const td = document.createElement("td");
+				if (n) {
+					const t = Math.sqrt(n / maxCell);  // sqrt keeps the small counts visible
+					td.style.background = `color-mix(in oklab, var(--heat-hi) ${Math.round(15 + t * 85)}%, var(--heat-lo))`;
+					td.style.color = t > 0.55 ? "var(--on-dark)" : "var(--ink)";
+					td.textContent = n;
+				} else {
+					td.className = "zero";
+					td.textContent = "·";
+				}
+				attachTip(td, `<strong>${esc(c.name)}</strong>${esc(partyName(p))}: ${count(n, "valtuutettu tai varavaltuutettu", "valtuutettua tai varavaltuutettua")}`);
+				tr.append(td);
+			}
+			tbody.append(tr);
+		}
+		heat.append(tbody);
+	}
+
+	// Local only: the full member table.
+	function renderMembers(councils) {
+		const all = Object.entries(councils).flatMap(([key, c]) => c.members.map(m => ({ ...m, coop: { key, name: c.name } })));
+		const coopFilter = document.getElementById("coop-filter");
+		for (const [key, c] of Object.entries(councils).sort((a, b) => a[1].name.localeCompare(b[1].name, "fi"))) coopFilter.add(new Option(c.name, key));
+		const partyFilter = document.getElementById("party-filter");
+		for (const p of MAIN_PARTIES) partyFilter.add(new Option(partyName(p), p));
+		const searchEl = document.getElementById("search");
+		const statusFilter = document.getElementById("status-filter");
+		const tbodyEl = document.getElementById("members");
+		const levelColor = Object.fromEntries(LEVELS.map(l => [l.key, l.color]));
+
+		function render() {
+			const q = searchEl.value.trim().toLowerCase();
+			const rows = all.filter(m => {
+				if (coopFilter.value && m.coop.key !== coopFilter.value) return false;
+				if (partyFilter.value && m.match?.party !== partyFilter.value) return false;
+				const s = statusFilter.value;
+				if (s === "elected" && level(m) !== "elected") return false;
+				if (s === "councillor" && !isCouncillor(m)) return false;
+				if (s === "ran" && !m.match) return false;
+				if (s === "none" && m.match) return false;
+				if (q && ![m.name, m.municipality, m.occupation, ...(m.area_municipalities || [])].join(" ").toLowerCase().includes(q)) return false;
+				return true;
+			}).sort((a, b) => (isCouncillor(b) - isCouncillor(a)) || (b.match?.votes || 0) - (a.match?.votes || 0));
+			tbodyEl.innerHTML = rows.map(m => {
+				const lv = level(m);
+				const place = m.municipality || (m.area_municipalities || []).join(", ");
+				return `<tr>
+					<td>${esc(m.name)}${m.deputy ? ' <span class="conf" title="Edustajiston varajäsen">varajäsen</span>' : ""}</td>
+					<td>${esc(m.coop.name)}</td>
+					<td>${esc(place)}</td>
+					<td>${esc(m.occupation || m.match?.occupation || "")}</td>
+					<td>${m.match ? esc(partyName(m.match.party)) : ""}</td>
+					<td><span class="status"><i style="background:${levelColor[lv]}"></i>${m.match ? esc(RESULT_LABEL[m.match.result] || m.match.result) : "Ei ehdolla"}</span></td>
+					<td class="num">${m.match ? m.match.votes.toLocaleString("fi-FI") : ""}</td>
+					<td>${m.match ? `<span class="conf" title="${esc(m.evidence.map(evidenceFi).join("; ") || "nimi ja kunta täsmäävät")}">${CONFIDENCE_LABEL[m.confidence]}</span>` : ""}</td>
+				</tr>`;
+			}).join("");
+			document.getElementById("count").textContent = `${rows.length}/${all.length} jäsentä`;
+		}
+		for (const el of [searchEl, coopFilter, statusFilter, partyFilter]) el.addEventListener("input", render);
+		render();
+	}
+</script>
+</body>
+</html>

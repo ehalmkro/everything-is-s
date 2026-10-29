@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="fi">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2300843d'/%3E%3Ctext x='16' y='23' font-family='system-ui,sans-serif' font-size='20' font-weight='700' fill='white' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E">
+	<title>Kaikki on S:ää</title>
+	<link href="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css" rel="stylesheet">
+	<script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js"></script>
+	<script src="config.js"></script>
+	<style>
+		:root {
+			--s-green: #00843d;
+			--ink: #16231b;
+			--muted: #5d6b62;
+			--panel: rgba(255, 255, 255, 0.96);
+			--line: #dfe7e1;
+		}
+		* { box-sizing: border-box; }
+		html, body { margin: 0; height: 100%; font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: #eef2ef; }
+		#map { position: absolute; inset: 0; }
+
+		#panel {
+			position: absolute; top: 12px; left: 12px; bottom: 12px; width: 320px;
+			display: flex; flex-direction: column;
+			background: var(--panel); border-radius: 12px; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+			overflow: hidden;
+		}
+		header { padding: 16px 16px 12px; border-bottom: 1px solid var(--line); }
+		h1 { margin: 0; font-size: 20px; letter-spacing: -0.01em; }
+		h1 span { color: var(--s-green); }
+		header p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+
+		.controls { padding: 12px 16px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
+		.controls label { display: flex; align-items: center; gap: 8px; }
+		.radius { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; }
+		.radius input { width: 100%; accent-color: var(--s-green); }
+		.radius output { font-variant-numeric: tabular-nums; min-width: 52px; text-align: right; }
+		.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+		.legend label { font-size: 13px; gap: 6px; cursor: pointer; }
+		.legend input { margin: 0; accent-color: var(--s-green); }
+		.swatch { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+
+		.list-head { display: flex; justify-content: space-between; padding: 10px 16px 4px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+		#cities { list-style: none; margin: 0; padding: 0 8px 8px; overflow-y: auto; flex: 1; }
+		#cities li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+		#cities li:hover, #cities li.active { background: #e8f4ec; }
+		#cities .name { font-weight: 600; }
+		#cities .stat { font-variant-numeric: tabular-nums; text-align: right; }
+		#cities .stat small { color: var(--muted); font-weight: normal; }
+		#cities .bar { grid-column: 1 / -1; height: 4px; background: #edf1ee; border-radius: 2px; overflow: hidden; }
+		#cities .bar i { display: block; height: 100%; background: var(--s-green); border-radius: 2px; }
+		footer { padding: 8px 16px; font-size: 11px; color: var(--muted); border-top: 1px solid var(--line); }
+		footer a { color: var(--s-green); font-size: 13px; font-weight: 600; }
+		.shade { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+		.shade label { font-size: 13px; gap: 4px; cursor: pointer; }
+		.shade input { margin: 0; accent-color: var(--s-green); }
+
+		.mapboxgl-popup-content { font: 13px/1.4 system-ui, sans-serif; padding: 10px 12px; max-width: 280px; }
+		.mapboxgl-popup-content ul { margin: 4px 0 0; padding-left: 16px; }
+		.mapboxgl-popup-content .addr { color: var(--muted); }
+
+		#error { position: absolute; inset: 0; display: none; place-items: center; padding: 24px; text-align: center; }
+
+		@media (max-width: 640px) {
+			#panel { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; max-height: 45vh; overflow-y: auto; }
+			#cities { flex: none; overflow: visible; }  /* the whole sheet scrolls instead */
+			header p { display: none; }
+		}
+	</style>
+</head>
+<body>
+	<div id="map"></div>
+	<aside id="panel">
+		<header>
+			<h1>Kaikki on <span>S</span>:ää</h1>
+			<p>S-ryhmän toimipaikat Suomen suurimmissa kaupungeissa. Mitä vihreämpi kaupunki, sitä enemmän S:ää asukasta kohden.</p>
+		</header>
+		<div class="controls">
+			<div class="radius">
+				<span>Kävelysäde</span>
+				<input id="radius" type="range" min="0" max="1500" step="50" value="500">
+				<output id="radius-value">500 m</output>
+			</div>
+			<label><input id="partners" type="checkbox"> Näytä myös bonuskumppanit (LähiTapiola, Silmäasema…)</label>
+			<label><input id="tilt" type="checkbox"> 3D-näkymä</label>
+			<div class="shade" role="radiogroup" aria-label="Kaupunkien väritys">
+				<span>Väritä kaupungit:</span>
+				<label><input type="radio" name="shade" value="s" checked> S-paikat asukasta kohden</label>
+				<label><input type="radio" name="shade" value="council"> Edustajiston jäsenet valtuustossa</label>
+			</div>
+			<div class="legend" id="legend"></div>
+		</div>
+		<div class="list-head"><span>Kaupunki</span><span id="list-metric">/ 10 000 asukasta</span></div>
+		<ul id="cities"></ul>
+		<footer><a href="politics.html">Kuka päättää osuuskaupoissa? →</a><br>Lähteet: S-Etukortin toimipaikkahaku · © OpenStreetMapin tekijät · Tilastokeskus · Oikeusministeriö</footer>
+	</aside>
+	<div id="error"></div>
+
+	<script>
+		const CATEGORIES = {
+			grocery: { label: "Ruokakaupat", color: "#00843d" },
+			fuel: { label: "ABC ja liikenneasemat", color: "#e0a100" },
+			restaurant: { label: "Ravintolat ja muut", color: "#d1495b" },
+			hotel: { label: "Hotellit", color: "#3a6fd8" },
+			department: { label: "Sokos ja tavaratalot", color: "#8e44ad" },
+			bank: { label: "S-Pankki", color: "#169c9c" },
+			partner: { label: "Bonuskumppanit", color: "#8a948e" },
+		};
+		const state = { radius: 500, partners: false, shade: "s", categories: new Set(Object.keys(CATEGORIES).filter(c => c !== "partner")) };
+
+		if (!window.MAPBOX_TOKEN) {
+			const el = document.getElementById("error");
+			el.style.display = "grid";
+			el.textContent = "Mapbox-tunnus puuttuu: kopioi config.example.js nimelle config.js ja lisää siihen julkinen tunnuksesi.";
+			throw new Error("missing MAPBOX_TOKEN");
+		}
+		mapboxgl.accessToken = window.MAPBOX_TOKEN;
+
+		const decimal = n => n.toLocaleString("fi-FI", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+		// Keep fitted views clear of the side panel (desktop) or bottom sheet (phone).
+		function panelPadding() {
+			return window.innerWidth > 640
+				? { top: 40, bottom: 40, left: 360, right: 40 }
+				: { top: 40, bottom: window.innerHeight * 0.45 + 16, left: 24, right: 24 };
+		}
+
+		const map = new mapboxgl.Map({
+			container: "map",
+			style: "mapbox://styles/mapbox/light-v11",
+			language: "fi",
+			bounds: [[20.5, 59.7], [31.6, 70.1]],
+			fitBoundsOptions: { padding: panelPadding() },
+			minZoom: 3,
+		});
+		map.addControl(new mapboxgl.NavigationControl(), "top-right");
+
+		const loadJson = url => fetch(url).then(r => {
+			if (!r.ok) throw new Error(`${url}: ${r.status}`);
+			return r.json();
+		});
+
+		Promise.all([
+			loadJson("data/municipalities.geojson"),
+			loadJson("data/locations.geojson"),
+			loadJson("data/buildings.geojson").catch(() => ({ type: "FeatureCollection", features: [] })),
+			loadJson("data/council_summary.json").catch(() => ({ municipalities: {} })),
+			new Promise(resolve => map.on("load", resolve)),
+		]).then(([municipalities, locations, buildings, councilSummary]) => init(municipalities, locations, buildings, councilSummary))
+			.catch(err => {
+				const el = document.getElementById("error");
+				el.style.display = "grid";
+				el.textContent = `Tietojen lataus epäonnistui (${err.message}). Aja README:n skriptit ja avaa kansio HTTP-palvelimen kautta.`;
+			});
+
+		function init(municipalities, locations, buildings, councilSummary) {
+			const scraped = new Set(locations.municipalities);
+			const placesById = new Map(locations.features.map(f => [f.properties.id, f.properties]));
+
+			// Cooperative council members elected to each city's council in 2025 (see politics.html).
+			const cityCouncillors = councilSummary.municipalities;
+
+			// Pixel radius of a metre at zoom 0 for this latitude (512px tiles), so circles can be sized in metres.
+			for (const f of locations.features) {
+				f.properties.k = 1 / (78271.517 * Math.cos(f.geometry.coordinates[1] * Math.PI / 180));
+			}
+			municipalities.features = municipalities.features.filter(f => scraped.has(f.properties.code));
+			for (const f of municipalities.features) delete f.properties.postcodes;
+
+			const layers = map.getStyle().layers;
+			// Tints go under water so the sea stays blue; buildings go under labels.
+			const firstWater = layers.find(l => l.id === "water")?.id ?? layers.find(l => /^(tunnel|road|bridge)/.test(l.id))?.id;
+			const firstSymbol = layers.find(l => l.type === "symbol")?.id;
+			map.setPaintProperty("building", "fill-color", "hsl(220, 0%, 94%)"); // fade the basemap's own buildings
+
+			map.addSource("municipalities", { type: "geojson", data: municipalities });
+			map.addSource("locations", { type: "geojson", data: locations });
+			map.addSource("buildings", { type: "geojson", data: buildings });
+
+			map.addLayer({
+				id: "municipality-fill", type: "fill", source: "municipalities",
+				paint: {
+					"fill-color": ["interpolate", ["linear"], ["get", "shade"],
+						0, "#f1f8f3", 0.25, "#b5e0c0", 0.5, "#5fbf7a", 0.75, "#1f9a4c", 1, "#00612b"],
+					"fill-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.85, 10, 0.3, 13, 0],
+				},
+			}, firstWater);
+			map.addLayer({
+				id: "municipality-line", type: "line", source: "municipalities",
+				paint: { "line-color": "#00612b", "line-width": ["interpolate", ["linear"], ["zoom"], 5, 0.6, 10, 2], "line-opacity": 0.6 },
+			}, firstSymbol);
+			map.addLayer({
+				id: "coverage", type: "circle", source: "locations", minzoom: 8,
+				paint: {
+					// Opaque, so overlapping circles merge into one flat "S zone" instead of stacking darker.
+					"circle-color": "#b9e6c5",
+					"circle-opacity": ["interpolate", ["linear"], ["zoom"], 8, 0, 9.5, 1],
+					"circle-pitch-alignment": "map",
+					"circle-pitch-scale": "map",
+				},
+			}, firstWater);
+
+			// S buildings: a glow so they read as bright specks at city zoom, a flat fill, then 3D up close.
+			map.addLayer({
+				id: "s-buildings-glow", type: "line", source: "buildings", minzoom: 9, maxzoom: 15,
+				paint: {
+					"line-color": "#00d95f",
+					"line-width": ["interpolate", ["linear"], ["zoom"], 9, 5, 12, 12, 14, 8],
+					"line-blur": ["interpolate", ["linear"], ["zoom"], 9, 3, 12, 8, 14, 6],
+					"line-opacity": ["interpolate", ["linear"], ["zoom"], 9, 1, 13, 0.85, 15, 0],
+				},
+			}, firstSymbol);
+			map.addLayer({
+				id: "s-buildings", type: "fill", source: "buildings", minzoom: 9,
+				paint: { "fill-color": "#00a846", "fill-outline-color": "#00602a" },
+			}, firstSymbol);
+			map.addLayer({
+				id: "s-buildings-3d", type: "fill-extrusion", source: "buildings", minzoom: 13.5,
+				paint: {
+					"fill-extrusion-color": "#00b04b",
+					"fill-extrusion-height": ["interpolate", ["linear"], ["zoom"], 13.5, 0, 14.5, ["max", ["get", "height"], 12]],
+					"fill-extrusion-opacity": 0.95,
+					"fill-extrusion-vertical-gradient": true,
+				},
+			}, firstSymbol);
+			map.addLayer({
+				id: "places", type: "circle", source: "locations", minzoom: 12.5,
+				paint: {
+					"circle-color": ["match", ["get", "category"], ...Object.entries(CATEGORIES).flatMap(([k, v]) => [k, v.color]), "#888"],
+					"circle-radius": ["interpolate", ["linear"], ["zoom"], 12.5, 2, 15, 5],
+					"circle-opacity": ["interpolate", ["linear"], ["zoom"], 12.5, 0, 13.5, 1],
+					"circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 12.5, 0, 13.5, 1],
+					"circle-stroke-color": "#fff",
+					"circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 12.5, 0.5, 15, 1.5],
+				},
+			});
+			map.addLayer({
+				id: "municipality-label", type: "symbol", source: "municipalities", maxzoom: 9,
+				layout: {
+					"text-field": ["format", ["get", "name"], { "font-scale": 1 }, "\n", {}, ["get", "label"], { "font-scale": 0.8 }],
+					"text-font": ["DIN Pro Bold", "Arial Unicode MS Bold"],
+					"text-size": 13,
+				},
+				paint: { "text-color": "#0c2a17", "text-halo-color": "rgba(255,255,255,0.9)", "text-halo-width": 1.5 },
+			});
+
+			function visible(p) {
+				return state.categories.has(p.category) || (p.category === "partner" && state.partners);
+			}
+
+			function update() {
+				const shown = ["any",
+					["in", ["get", "category"], ["literal", [...state.categories]]],
+					["all", ["==", ["get", "category"], "partner"], state.partners]];
+				map.setFilter("places", shown);
+				map.setFilter("coverage", shown);
+				const buildingShown = ["any",
+					...[...state.categories].map(c => ["in", c, ["get", "categories"]]),
+					["all", ["in", "partner", ["get", "categories"]], state.partners]];
+				for (const id of ["s-buildings-glow", "s-buildings", "s-buildings-3d"]) map.setFilter(id, buildingShown);
+
+				const r = state.radius;
+				map.setLayoutProperty("coverage", "visibility", r > 0 ? "visible" : "none");
+				map.setPaintProperty("coverage", "circle-radius", ["interpolate", ["exponential", 2], ["zoom"],
+					0, ["*", ["get", "k"], r], 22, ["*", ["get", "k"], r * 2 ** 22]]);
+
+				const counts = {};
+				for (const f of locations.features) {
+					if (visible(f.properties)) counts[f.properties.municipality] = (counts[f.properties.municipality] || 0) + 1;
+				}
+				const maxCouncillors = Math.max(1, ...municipalities.features.map(f => {
+					const c = cityCouncillors[f.properties.name];
+					return c ? c.elected + c.deputy : 0;
+				}));
+				for (const f of municipalities.features) {
+					const p = f.properties;
+					p.count = counts[p.code] || 0;
+					p.per10k = p.count / p.population * 1e4;
+					const c = cityCouncillors[p.name] || { elected: 0, deputy: 0 };
+					p.councillors = c.elected + c.deputy;
+					if (state.shade === "s") {
+						p.value = p.per10k;
+						p.shade = p.per10k / 12;
+						p.label = `${p.count} · ${decimal(p.per10k)} / 10 000 as.`;
+						p.stat = `${decimal(p.per10k)} <small>(${p.count})</small>`;
+					} else {
+						p.value = p.councillors;
+						p.shade = p.councillors / maxCouncillors;
+						p.label = `${c.elected} ${c.elected === 1 ? "valtuutettu" : "valtuutettua"} (+${c.deputy} vara)`;
+						p.stat = `${c.elected} <small>+ ${c.deputy}</small>`;
+					}
+				}
+				map.getSource("municipalities").setData(municipalities);
+				document.getElementById("list-metric").textContent =
+					state.shade === "s" ? "/ 10 000 asukasta" : "valtuutettuja (+ varavaltuutettuja)";
+				renderList();
+			}
+
+			function renderList() {
+				const rows = municipalities.features.map(f => f.properties).sort((a, b) => b.value - a.value);
+				const max = Math.max(...rows.map(r => r.value), 1);
+				const list = document.getElementById("cities");
+				list.replaceChildren(...rows.map(r => {
+					const li = document.createElement("li");
+					li.dataset.code = r.code;
+					li.innerHTML = `<span class="name"></span><span class="stat">${r.stat}</span>
+						<span class="bar"><i style="width:${(r.value / max * 100).toFixed(1)}%"></i></span>`;
+					li.querySelector(".name").textContent = r.name;
+					li.addEventListener("click", () => flyToCity(r.code));
+					return li;
+				}));
+			}
+
+			function flyToCity(code) {
+				const points = locations.features.filter(f => f.properties.municipality === code && visible(f.properties));
+				if (!points.length) return;
+				const bounds = new mapboxgl.LngLatBounds();
+				for (const f of points) bounds.extend(f.geometry.coordinates);
+				map.fitBounds(bounds, { padding: panelPadding(), maxZoom: 14 });
+				document.querySelectorAll("#cities li").forEach(li => li.classList.toggle("active", li.dataset.code === code));
+			}
+
+			// Controls
+			const legend = document.getElementById("legend");
+			for (const [key, cat] of Object.entries(CATEGORIES)) {
+				if (key === "partner") continue;
+				const label = document.createElement("label");
+				label.innerHTML = `<input type="checkbox" checked><span class="swatch" style="background:${cat.color}"></span>${cat.label}`;
+				label.querySelector("input").addEventListener("change", e => {
+					e.target.checked ? state.categories.add(key) : state.categories.delete(key);
+					update();
+				});
+				legend.append(label);
+			}
+			const radius = document.getElementById("radius");
+			radius.addEventListener("input", () => {
+				state.radius = Number(radius.value);
+				document.getElementById("radius-value").textContent = state.radius ? `${state.radius} m` : "pois";
+				update();
+			});
+			document.getElementById("partners").addEventListener("change", e => {
+				state.partners = e.target.checked;
+				update();
+			});
+			for (const radio of document.querySelectorAll("input[name=shade]")) {
+				radio.addEventListener("change", () => {
+					state.shade = radio.value;
+					update();
+				});
+			}
+			const tilt = document.getElementById("tilt");
+			tilt.addEventListener("change", () => {
+				// Buildings only rise from zoom ~14, so tilting from further out also zooms in.
+				map.easeTo(tilt.checked
+					? { pitch: 60, bearing: -20, zoom: Math.max(map.getZoom(), 15), duration: 1200 }
+					: { pitch: 0, bearing: 0, duration: 800 });
+			});
+			map.on("pitchend", () => tilt.checked = map.getPitch() > 10);
+
+			// Popups
+			const hover = new mapboxgl.Popup({ closeButton: false, closeOnClick: false, offset: 8 });
+			const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+			map.on("mousemove", "places", e => {
+				map.getCanvas().style.cursor = "pointer";
+				const p = e.features[0].properties;
+				hover.setLngLat(e.features[0].geometry.coordinates)
+					.setHTML(`<strong>${esc(p.name)}</strong><br><span class="addr">${esc(p.address)}</span><br>${CATEGORIES[p.category].label}`)
+					.addTo(map);
+			});
+			map.on("mouseleave", "places", () => {
+				map.getCanvas().style.cursor = "";
+				hover.remove();
+			});
+			for (const layer of ["s-buildings", "s-buildings-3d"]) {
+				map.on("click", layer, e => {
+					if (map.queryRenderedFeatures(e.point, { layers: ["places"] }).length) return;
+					const p = e.features[0].properties;
+					const places = p.place_ids.split(",").map(id => placesById.get(id)).filter(visible);
+					new mapboxgl.Popup({ offset: 4 }).setLngLat(e.lngLat)
+						.setHTML(`<strong>${esc(p.name || places[0]?.address)}</strong>
+							<ul>${places.map(x => `<li>${esc(x.name)}</li>`).join("")}</ul>`)
+						.addTo(map);
+				});
+				map.on("mouseenter", layer, () => map.getCanvas().style.cursor = "pointer");
+				map.on("mouseleave", layer, () => map.getCanvas().style.cursor = "");
+			}
+			map.on("click", "municipality-fill", e => {
+				if (map.getZoom() < 9) flyToCity(e.features[0].properties.code);
+			});
+
+			update();
+		}
+	</script>
+</body>
+</html>
