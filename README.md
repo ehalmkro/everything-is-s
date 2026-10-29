@@ -1,6 +1,6 @@
 # Kaikki on S:ää
 
-**https://ehalmkro.github.io/kaikki-on-s/** (in Finnish)
+**https://ehalmkro.github.io/everything-is-s/** (in Finnish)
 
 A map of every S-group place of business in Finland's 20 biggest cities, and a dashboard of who governs the regional cooperatives that own them.
 
@@ -30,7 +30,7 @@ Only aggregate counts are published (`site/data/council_summary.json`): per coop
 
 ## Corrections
 
-Found an error? [Open an issue](https://github.com/ehalmkro/kaikki-on-s/issues).
+Found an error? [Open an issue](https://github.com/ehalmkro/everything-is-s/issues).
 
 ## Data and licences
 
